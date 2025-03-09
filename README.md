@@ -1,5 +1,8 @@
 ## 🎮 Python Snake – Learn Python While Playing!  
 
+<img width="514" alt="Screenshot 2025-03-09 at 4 11 08 AM" src="https://github.com/user-attachments/assets/8e96d32b-e08d-4b62-8e38-abbd1c09a4d5" />
+
+
 ### [🐍 Start Now](https://metagalacticscripts.github.io/Python-Snake-Game/)  
 
 Python Snake is a **fun and interactive** way to learn Python! Move your snake, answer coding questions, and test your skills while enjoying a classic game.  
