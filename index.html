@@ -1132,7 +1132,7 @@ function toggleLearnMode() {
     const foodY = food.y * cellSize + offset;
 
     // Set color based on Learn Mode
-    ctx.fillStyle = isLearnMode ? (food.correct ? "#00FF00" : "#FF0000") : "#FF0000"; // Green for correct in Learn Mode, red otherwise
+    ctx.fillStyle = isLearnMode ? (food.correct ? "#008000" : "#FF0000") : "#FF0000"; // Green for correct in Learn Mode, red otherwise
     ctx.fillRect(foodX, foodY, blockSize, blockSize);
 
     // Draw the text
