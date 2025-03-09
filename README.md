@@ -1,6 +1,6 @@
 ## 🎮 Python Snake – Learn Python While Playing!  
 
-<img width="514" alt="Screenshot 2025-03-09 at 4 11 08 AM" src="https://github.com/user-attachments/assets/8e96d32b-e08d-4b62-8e38-abbd1c09a4d5" />
+<img width="630" alt="Screenshot 2025-03-09 at 5 03 01 AM" src="https://github.com/user-attachments/assets/e81f9f26-6db5-47f5-bca7-c41daa124326" />
 
 
 ### [🐍 Start Now](https://metagalacticscripts.github.io/Python-Snake-Game/)  
