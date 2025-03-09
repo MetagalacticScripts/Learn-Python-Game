@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Python Snake 🐍</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #E6F0FA;
+      --snake-color: #4285f4;
+      --text-color: #333;
+    }
+.drag-handle {
+  height: 10px; /* Thin bar for dragging */
+  background: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+  border-radius: 5px;
+  margin-bottom: 10px;
+  cursor: grab; /* Indicates draggable */
+}
+
+.drag-handle:active {
+  cursor: grabbing; /* Changes cursor when dragging */
+}
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--bg-color), #EAF7F0);
+      font-family: 'Roboto', sans-serif;
+      color: var(--text-color);
+      overflow-x: hidden;
+      touch-action: none;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    @media (min-width: 768px) { .container { flex-direction: row; } }
+    .sidebar {
+      width: 100%;
+      background: #FFFFFF;
+      border-top: 1px solid #E0E0E0;
+      padding: 2vh;
+      box-sizing: border-box;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+      order: 2;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    @media (min-width: 768px) {
+      .sidebar {
+        width: 25vw;
+        border-top: none;
+        border-left: 1px solid #E0E0E0;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+        max-height: none;
+        order: 0;
+      }
+    }
+    .sidebar h2 { font-size: 1.5rem; margin-bottom: 1vh; color: #4A90E2; }
+    #score-list { list-style: none; padding: 0; margin: 0; }
+    #score-list li { font-size: 1rem; padding: 0.5vh 0; border-bottom: 1px solid #E0E0E0; }
+    #score-list li:first-child::before { content: "🏆 "; }
+
+    .main-content {
+      flex: 1;
+      padding: 2vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      order: 1;
+      overflow-y: auto;
+      position: relative;
+    }
+    h1 { font-size: clamp(2rem, 8vw, 3rem); color: #4A90E2; margin: 2vh 0; font-weight: 500; }
+
+    #scoreDisplay {
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      color: #4A90E2;
+      margin-bottom: 1rem;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 0.5rem 1rem;
+      border-radius: 0.3rem;
+      transition: box-shadow 0.3s ease;
+    }
+    #scoreDisplay.glow { box-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700; }
+    #toggleLearnModeBtn {
+  background: #4A90E2; /* Matches the default blue of other buttons */
+  color: #FFF;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  margin: 0.5rem 0;
+  width: 100%;
+  font-size: 1rem;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; /* Smooth transitions */
+}
+
+#toggleLearnModeBtn:hover {
+  background: #357ABD; /* Darker blue on hover, matching other buttons */
+  transform: scale(1.05); /* Slight scale-up on hover */
+}
+
+#toggleLearnModeBtn:active {
+  transform: scale(0.95); /* Slight scale-down on click */
+}
+
+#toggleLearnModeBtn.active {
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5); /* Matching selected state shadow */
+  filter: brightness(0.8); /* Matching selected state brightness */
+}
+
+#toggleLearnModeBtn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2); /* Subtle glow effect */
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+
+#toggleLearnModeBtn:hover::after {
+  width: 200%;
+  height: 200%;
+}
+
+    #question {
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-weight: bold;
+      color: #000;
+      margin-bottom: 1rem;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 0.5rem 1rem;
+      border-radius: 0.3rem;
+    }
+    #resetButton {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  margin: 0.5rem 0;
+  width: 100%;
+  max-width: 200px;
+  align-self: center;
+  position: static; /* Remove absolute positioning */
+  top: auto; /* Remove top positioning */
+  left: auto; /* Remove left positioning */
+}
+
+@media (max-width: 768px) {
+  #resetButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+    #gameCanvas {
+      background: #fff;
+      border: 2px solid #E0E0E0;
+      border-radius: 1vh;
+      margin: 2vh 0;
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      aspect-ratio: 1;
+    }
+
+    button {
+      border: none;
+      padding: 0.75rem 1.5rem;
+      margin: 0.5rem;
+      border-radius: 0.3rem;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #FFF;
+      transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      min-width: 100px;
+    }
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.95); }
+
+    .difficulty-buttons button { background: #4A90E2; }
+    .difficulty-buttons button:hover { background: #357ABD; }
+    .color-buttons button { transition: background 0.3s ease, box-shadow 0.3s ease; }
+    .color-buttons button.blue-btn { background: #4285f4; }
+    .color-buttons button.pink-btn { background: #ff69b4; }
+    .color-buttons button.red-btn { background: #FF4500; }
+    .color-buttons button.selected {
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5);
+      filter: brightness(0.8);
+    }
+    .difficulty-buttons button.selected {
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.5);
+      filter: brightness(0.8);
+    }
+    #toggleSoundBtn { background: #4A90E2; font-size: 1.5rem; }
+    #toggleSoundBtn:hover { background: #357ABD; }
+
+    #startRestartBtn {
+  background: #4A90E2;
+  margin: 1rem 0;
+  padding: 0.75rem 1.5rem;
+  width: 100%;
+  max-width: 200px;
+  align-self: center;
+  position: static; /* Remove absolute positioning */
+  top: auto; /* Remove top positioning */
+  right: auto; /* Remove right positioning */
+}
+
+@media (max-width: 768px) {
+  #startRestartBtn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+    .mobile-controls {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  max-width: 300px;
+  min-height: 150px;
+  background: rgba(0, 0, 0, 0.3); /* Increased transparency (0.3 instead of 0.8) */
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 1000;
+  user-select: none;
+  touch-action: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-controls {
+    display: block;
+  }
+}
+
+.dpad {
+  display: grid;
+  grid-template-areas:
+    ". up ."
+    "left down right";
+  grid-template-columns: 60px 60px 60px; /* Increased column width for spacing */
+  grid-template-rows: 60px 60px; /* Increased row height for spacing */
+  gap: 15px; /* Added gap between buttons */
+  justify-content: center;
+  align-items: center;
+}
+
+.dpad button {
+  width: 60px; /* Match grid column width */
+  height: 60px; /* Match grid row height */
+  font-size: 1.5rem;
+  background: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+    .dpad button:hover {
+      background: #357ABD;
+    }
+
+    .dpad button:active {
+      transform: scale(0.95);
+    }
+
+    .up-btn    { grid-area: up; }
+    .down-btn  { grid-area: down; }
+    .left-btn  { grid-area: left; }
+    .right-btn { grid-area: right; }
+
+    .popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-content {
+      background: #FFF;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      max-width: 90%;
+      width: 500px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      color: #333;
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+    .popup-content h2 {
+      color: #800000;
+      font-weight: bold;
+      font-size: 2.5rem;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+    .popup-content.win-animation {
+      animation: bounce 1s ease infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .popup-content p { font-size: 1.1rem; color: #000; margin-bottom: 1rem; white-space: pre-wrap; }
+    .popup-content button {
+      background: #4A90E2;
+      margin: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .popup-content button:hover { background: #357ABD; }
+    .close-button {
+      position: absolute;
+      top: 0.3rem;
+      right: 0.5rem;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.2s ease, transform 0.2s ease;
+      padding: 0;
+      line-height: 1;
+    }
+    .close-button:hover { color: #666; transform: scale(1.1); }
+    .close-button:focus, .close-button:active { outline: none; box-shadow: none; border: none; background: transparent; }
+    .close-button:focus-visible { outline: none; }
+
+    #playerNameInput {
+      width: 80%; max-width: 300px;
+      padding: 0.5rem; margin: 1rem 0;
+      border: 1px solid #ccc; border-radius: 0.3rem;
+      font-size: 1rem;
+      color: #000;
+      background: #FFF;
+    }
+
+    .difficulty-buttons, .color-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .difficulty-buttons button, .color-buttons button { flex: 1; min-width: 80px; }
+
+    .score-animation {
+      position: absolute;
+      font-size: 1.5rem;
+      color: #FFD700;
+      font-weight: bold;
+      z-index: 1000;
+      animation: floatUp 1s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-50px); }
+    }
+  </style>
+</head>
+<body>
+  <audio id="awwwSound" src="https://www.myinstants.com/media/sounds/aww.mp3"></audio>
+  <audio id="nomNomSound" src="https://www.myinstants.com/media/sounds/nomnomnom.mp3"></audio>
+  <audio id="invincibilitySound" src="https://www.myinstants.com/media/sounds/shield.mp3"></audio>
+  <audio id="bgMusicSlow" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+  <audio id="bgMusicFast" src="https://www.bensound.com/bensound-music/bensound-highoctane.mp3" loop></audio>
+  <audio id="eatSound" src="https://www.myinstants.com/media/sounds/coin.mp3"></audio>
+  <audio id="gameOverSound" src="https://www.soundjay.com/buttons/beep-03.mp3"></audio>
+  <audio id="milestoneSound" src="https://www.soundjay.com/human/voice-cheer-01.mp3"></audio>
+  <audio id="winSound" src="https://www.soundjay.com/human/applause-01.mp3"></audio>
+  <audio id="wrongSound" src="https://www.soundjay.com/buttons/beep-02.mp3"></audio>
+
+  <div class="container">
+<div class="sidebar">
+  <h2>Python Snake 🐍</h2>
+  <h2>Settings</h2>
+  <div class="difficulty-buttons">
+    <button onclick="setDifficulty('easy')">Easy</button>
+    <button onclick="setDifficulty('medium')">Medium</button>
+    <button onclick="setDifficulty('hard')">Hard</button>
+  </div>
+  <div class="color-buttons">
+    <button class="blue-btn" onclick="setSnakeColor('blue', this)">Blue</button>
+    <button class="pink-btn" onclick="setSnakeColor('pink', this)">Pink</button>
+    <button class="red-btn" onclick="setSnakeColor('red', this)">Red</button>
+  </div>
+  <button id="toggleLearnModeBtn" onclick="toggleLearnMode()">Learn Mode: Off</button>
+  <button id="toggleSoundBtn">🔇</button>
+  <h2>Scoreboard</h2>
+  <ul id="score-list"></ul>
+</div>
+
+    <div class="main-content">
+  <h1>Python Snake 🐍</h1>
+  <div id="scoreDisplay">🏆 Score: 0</div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="question">Question will appear here</div>
+  <button id="startRestartBtn" onclick="handleStartRestart()">Start</button>
+  <button id="resetButton" onclick="restartGame()">Reset</button>
+</div>
+  </div>
+
+  <div class="mobile-controls">
+  <div class="drag-handle"></div> <!-- Empty drag handle -->
+  <div class="dpad">
+    <button class="up-btn" onclick="mobileControl('up')">↑</button>
+    <button class="down-btn" onclick="mobileControl('down')">↓</button>
+    <button class="left-btn" onclick="mobileControl('left')">←</button>
+    <button class="right-btn" onclick="mobileControl('right')">→</button>
+  </div>
+</div>
+
+  <div id="popupOverlay" class="popup-overlay">
+    <div class="popup-content">
+      <button class="close-button" onclick="hidePopup()">x</button>
+      <h2 id="popupTitle"></h2>
+      <p id="popupMessage"></p>
+      <input id="playerNameInput" type="text" placeholder="Enter your name..." />
+      <div>
+        <button id="submitBtn" onclick="submitScore()">Submit Score</button>
+        <button id="restartBtn" onclick="restartGame()">Restart</button>
+        <button id="shareBtn" onclick="shareScore()" class="hidden">Share Score</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      CELL_SIZE: 50,
+      COLS: 12,
+      ROWS: 12,
+      DIFFICULTIES: {
+        easy: { INITIAL_SPEED: 600, REQUIRED_CORRECT: 20, POINTS_PER_CORRECT: 100 },
+        medium: { INITIAL_SPEED: 650, REQUIRED_CORRECT: 20, POINTS_PER_CORRECT: 200 },
+        hard: { INITIAL_SPEED: 500, REQUIRED_CORRECT: 20, POINTS_PER_CORRECT: 300 }
+      },
+      MIN_SPEED: 200,
+      SPEED_INCREMENT: 50,
+      TIME_SPEED_INCREMENT: 30,
+      TIME_SPEED_INTERVAL: 4000,
+      QUESTION_TIME_LIMIT: 45000,
+      MOVE_DELAY: 100,
+      POWER_UP_CHANCE: 0.05,
+      IMMUNITY_CHANCE: 0.0333,
+      IMMUNITY_DURATION: 15000,
+      SHINY_DURATION: 15000
+    };
+
+    let canvas = document.getElementById("gameCanvas");
+    let ctx = canvas.getContext("2d");
+    let cellSize = CONFIG.CELL_SIZE;
+    let cols = CONFIG.COLS;
+    let rows = CONFIG.ROWS;
+    let currentQuestion = null;
+
+    let snake = [];
+    let direction = { x: 1, y: 0 };
+    let foodItems = [];
+    let powerUps = [];
+    let score = 0;
+    let correctAnswers = 0;
+    let gameSpeed = CONFIG.DIFFICULTIES.easy.INITIAL_SPEED;
+    let pointsPerCorrect = CONFIG.DIFFICULTIES.easy.POINTS_PER_CORRECT;
+    let minSpeed = CONFIG.MIN_SPEED;
+    let requiredCorrect = CONFIG.DIFFICULTIES.easy.REQUIRED_CORRECT;
+    let gameOver = false;
+    let gameStarted = false;
+    let lastMove = 0;
+    let lastUpdateTime = 0;
+    let gameStartTime = 0;
+    let timeSpeedTimer;
+    let slitherOffset = 0;
+    let immunityEndTime = 0;
+    let shinyEndTime = 0;
+    let snakeColor = "blue";
+    let isSoundOn = true;
+    let currentDifficulty = "easy";
+    let hasSubmittedScore = false;
+
+    let questionTimer;
+    let currentQuestionIndex = 0;
+    let questionCategories = {
+      easy: [
+        { q: "What does `print('Hello')` output?", c: "Hello", w: ["Hi", "Hello World"], exp: "`print('Hello')` outputs the string 'Hello' to the console." },
+        { q: "Identify the data type of `'Python'`", c: "string", w: ["number", "list"], exp: "`'Python'` is a string, a sequence of characters enclosed in quotes." },
+        { q: "What is the purpose of `#` in Python?", c: "comment", w: ["variable", "operator"], exp: "`#` denotes a comment, which Python ignores during execution." },
+        { q: "Which keyword displays output?", c: "print", w: ["show", "display"], exp: "The `print` keyword displays output to the console." },
+        { q: "What does `'code' + 'r'` produce?", c: "coder", w: ["code r", "cr"], exp: "`'code' + 'r'` concatenates the strings to produce 'coder'." },
+        { q: "What inspired Python's name?", c: "Monty Python", w: ["snake species", "programming term"], exp: "Python is named after the comedy group Monty Python, not a snake." },
+        { q: "How are Python statements separated?", c: "new line", w: ["semicolon", "comma"], exp: "Python uses a new line to separate statements, unlike semicolon-based languages." },
+        { q: "Identify the data type of `'snake'`", c: "string", w: ["variable", "function"], exp: "`'snake'` is a string, enclosed in quotation marks." },
+        { q: "Which symbol assigns a value?", c: "=", w: ["==", "+"], exp: "The `=` symbol assigns a value to a variable in Python." },
+        { q: "What does `print('py' + 'thon')` output?", c: "python", w: ["py thon", "p"], exp: "`'py' + 'thon'` concatenates to output 'python'." },
+        { q: "What is the file extension for Python?", c: ".py", w: [".txt", ".exe"], exp: "Python source files use the `.py` extension." },
+        { q: "What does `''` represent?", c: "empty string", w: ["space", "null"], exp: "`''` is an empty string with no characters." },
+        { q: "Which keyword starts a loop?", c: "for", w: ["loop", "repeat"], exp: "The `for` keyword initiates a loop in Python." },
+        { q: "What does `print('learn')` output?", c: "learn", w: ["l", "learning"], exp: "`print('learn')` outputs the string 'learn'." },
+        { q: "Does Python have an official mascot?", c: "no", w: ["yes", "snake"], exp: "Python has no official mascot, despite its name." },
+        { q: "What encloses a string in Python?", c: "quotes", w: ["brackets", "parentheses"], exp: "Strings are enclosed in single (`'`) or double (`\"`) quotes." },
+        { q: "What does `print('code')` display?", c: "code", w: ["c", "coding"], exp: "`print('code')` displays the string 'code'." },
+        { q: "Identify the type of `'data'`", c: "string", w: ["number", "code"], exp: "`'data'` is a string, a text data type." },
+        { q: "What does `'py' + 'jam'` produce?", c: "pyjam", w: ["py jam", "pj"], exp: "`'py' + 'jam'` concatenates to 'pyjam'." },
+        { q: "Which keyword tests a condition?", c: "if", w: ["test", "check"], exp: "The `if` keyword evaluates a condition in Python." },
+        { q: "What does `print('run')` output?", c: "run", w: ["r", "running"], exp: "`print('run')` outputs the string 'run'." },
+        { q: "What stores data in Python?", c: "variable", w: ["function", "print"], exp: "A variable stores data using a name and value." },
+        { q: "What does `'yes' + 'no'` produce?", c: "yesno", w: ["yes no", "yn"], exp: "`'yes' + 'no'` concatenates to 'yesno'." },
+        { q: "Who created Python?", c: "Guido van Rossum", w: ["Tim Berners-Lee", "Bill Gates"], exp: "Guido van Rossum is the creator of Python." },
+        { q: "What is `name` without quotes?", c: "variable", w: ["string", "keyword"], exp: "`name` without quotes is a variable identifier." },
+        { q: "What symbol begins a comment?", c: "#", w: ["//", "%"], exp: "The `#` symbol begins a comment in Python." },
+        { q: "What does `print('yes')` show?", c: "yes", w: ["y", "no"], exp: "`print('yes')` shows the string 'yes'." },
+        { q: "Identify the type of `'123'`", c: "string", w: ["integer", "float"], exp: "`'123'` is a string because it’s in quotes." },
+        { q: "Which keyword defines a function?", c: "def", w: ["func", "define"], exp: "The `def` keyword defines a function in Python." },
+        { q: "What does `print('go')` display?", c: "go", w: ["g", "going"], exp: "`print('go')` displays the string 'go'." },
+        { q: "What is Python used for?", c: "programming", w: ["designing", "cooking"], exp: "Python is a language used for programming." },
+        { q: "What does `'hi' + 'ya'` produce?", c: "hiya", w: ["hi ya", "h"], exp: "`'hi' + 'ya'` concatenates to 'hiya'." },
+        { q: "Identify the type of `True`", c: "boolean", w: ["string", "number"], exp: "`True` is a boolean, representing true or false." },
+        { q: "What does `print('stop')` output?", c: "stop", w: ["s", "stopping"], exp: "`print('stop')` outputs the string 'stop'." },
+        { q: "What executes Python code?", c: "interpreter", w: ["compiler", "editor"], exp: "The Python interpreter executes Python code line by line." },
+        { q: "Identify the type of `'yes'`", c: "string", w: ["boolean", "variable"], exp: "`'yes'` is a string, not a boolean." },
+        { q: "Which keyword exits a loop?", c: "break", w: ["exit", "stop"], exp: "The `break` keyword exits a loop early." },
+        { q: "What does `print('play')` show?", c: "play", w: ["p", "playing"], exp: "`print('play')` shows the string 'play'." },
+        { q: "What does `'hi' + ' there'` produce?", c: "hi there", w: ["hithere", "ht"], exp: "`'hi' + ' there'` includes a space, producing 'hi there'." }
+      ],
+      medium: [
+        { q: "What does `print('code')` output?", c: "code", w: ["c", "coding"], exp: "`print('code')` outputs the string 'code'." },
+        { q: "Which keyword evaluates conditions?", c: "if", w: ["when", "test"], exp: "The `if` keyword evaluates conditions in Python." },
+        { q: "What does `'learn' + 'ing'` produce?", c: "learning", w: ["learn ing", "lg"], exp: "`'learn' + 'ing'` concatenates to 'learning'." },
+        { q: "What is a `list` in Python?", c: "sequence", w: ["string", "number"], exp: "A `list` is a sequence of items in Python." },
+        { q: "What does `'py' + 'game'` produce?", c: "pygame", w: ["py game", "pg"], exp: "`'py' + 'game'` concatenates to 'pygame'." },
+        { q: "Which keyword creates a loop?", c: "while", w: ["loop", "do"], exp: "The `while` keyword creates a loop that runs while a condition is true." },
+        { q: "Identify the type of `False`", c: "boolean", w: ["string", "integer"], exp: "`False` is a boolean value, meaning false." },
+        { q: "What is `'hello'` in Python?", c: "string", w: ["greeting", "variable"], exp: "`'hello'` is a string data type." },
+        { q: "What does `'run' + 'ner'` produce?", c: "runner", w: ["run ner", "r"], exp: "`'run' + 'ner'` concatenates to 'runner'." },
+        { q: "Which keyword loads a module?", c: "import", w: ["load", "add"], exp: "The `import` keyword loads a module into Python." },
+        { q: "What does `'yes' + 'terday'` produce?", c: "yesterday", w: ["yes terday", "y"], exp: "`'yes' + 'terday'` concatenates to 'yesterday'." },
+        { q: "What module draws graphics?", c: "turtle", w: ["draw", "art"], exp: "The `turtle` module draws graphics in Python." },
+        { q: "What does `'go' + 'go'` produce?", c: "gogo", w: ["go go", "g"], exp: "`'go' + 'go'` concatenates to 'gogo'." },
+        { q: "Which keyword returns a value?", c: "return", w: ["give", "send"], exp: "The `return` keyword returns a value from a function." },
+        { q: "Identify the type of `'code'`", c: "string", w: ["function", "number"], exp: "`'code'` is a string, enclosed in quotes." },
+        { q: "What does `pass` do in Python?", c: "nothing", w: ["skip", "pause"], exp: "`pass` is a placeholder that does nothing." },
+        { q: "What does `'play' + 'ing'` produce?", c: "playing", w: ["play ing", "p"], exp: "`'play' + 'ing'` concatenates to 'playing'." },
+        { q: "Which keyword defines a class?", c: "class", w: ["type", "object"], exp: "The `class` keyword defines a class in Python." },
+        { q: "What does `'work' + 'er'` produce?", c: "worker", w: ["work er", "w"], exp: "`'work' + 'er'` concatenates to 'worker'." },
+        { q: "What does `True` represent?", c: "true", w: ["string", "false"], exp: "`True` is a boolean value representing true." },
+        { q: "What does `'learn' + 'er'` produce?", c: "learner", w: ["learn er", "l"], exp: "`'learn' + 'er'` concatenates to 'learner'." },
+        { q: "Which module generates randomness?", c: "random", w: ["rand", "chaos"], exp: "The `random` module generates random values." },
+        { q: "What does `'code' + 'ing'` produce?", c: "coding", w: ["code ing", "c"], exp: "`'code' + 'ing'` concatenates to 'coding'." },
+        { q: "Which keyword skips an iteration?", c: "continue", w: ["skip", "next"], exp: "The `continue` keyword skips to the next loop iteration." },
+        { q: "What does `'jump' + 'er'` produce?", c: "jumper", w: ["jump er", "j"], exp: "`'jump' + 'er'` concatenates to 'jumper'." },
+        { q: "What is a `dict` in Python?", c: "key-value pairs", w: ["list", "string"], exp: "A `dict` stores key-value pairs in Python." },
+        { q: "What does `'run' + 'ning'` produce?", c: "running", w: ["run ning", "r"], exp: "`'run' + 'ning'` concatenates to 'running'." },
+        { q: "Which operator tests equality?", c: "==", w: ["=", "!="], exp: "The `==` operator tests if two values are equal." },
+        { q: "What does `'play' + 'play'` produce?", c: "playplay", w: ["play play", "p"], exp: "`'play' + 'play'` concatenates to 'playplay'." },
+        { q: "What does `None` signify?", c: "no value", w: ["zero", "string"], exp: "`None` signifies the absence of a value." },
+        { q: "What does `'fast' + 'er'` produce?", c: "faster", w: ["fast er", "f"], exp: "`'fast' + 'er'` concatenates to 'faster'." },
+        { q: "Which module handles time?", c: "time", w: ["clock", "date"], exp: "The `time` module manages time-related functions." },
+        { q: "What does `'sing' + 'ing'` produce?", c: "singing", w: ["sing ing", "s"], exp: "`'sing' + 'ing'` concatenates to 'singing'." },
+        { q: "Which keyword raises an exception?", c: "raise", w: ["throw", "error"], exp: "The `raise` keyword raises an exception in Python." },
+        { q: "What does `'dance' + 'r'` produce?", c: "dancer", w: ["dance r", "d"], exp: "`'dance' + 'r'` concatenates to 'dancer'." },
+        { q: "Which keyword starts a `for` loop?", c: "for", w: ["loop", "start"], exp: "The `for` keyword starts a `for` loop." },
+        { q: "What does `'code' + 'code'` produce?", c: "codecode", w: ["code code", "c"], exp: "`'code' + 'code'` concatenates to 'codecode'." },
+        { q: "Which keyword attempts code?", c: "try", w: ["do", "attempt"], exp: "The `try` keyword attempts code that might fail." },
+        { q: "What does `'yes' + 'yes'` produce?", c: "yesyes", w: ["yes yes", "y"], exp: "`'yes' + 'yes'` concatenates to 'yesyes'." },
+        { q: "Which keyword handles errors?", c: "except", w: ["catch", "fix"], exp: "The `except` keyword handles errors in a `try` block." }
+      ],
+      hard: [
+        { q: "What does `dir()` return?", c: "attributes", w: ["files", "directory"], exp: "`dir()` returns a list of an object’s attributes." },
+        { q: "Which keyword catches exceptions?", c: "except", w: ["catch", "stop"], exp: "The `except` keyword catches exceptions in a `try` block." },
+        { q: "What does `'quick' + 'ly'` produce?", c: "quickly", w: ["quick ly", "q"], exp: "`'quick' + 'ly'` concatenates to 'quickly'." },
+        { q: "What is a `list` used for?", c: "storing items", w: ["printing", "looping"], exp: "A `list` is used for storing multiple items in order." },
+        { q: "What does `'smart' + 'er'` produce?", c: "smarter", w: ["smart er", "s"], exp: "`'smart' + 'er'` concatenates to 'smarter'." },
+        { q: "Which keyword yields values?", c: "yield", w: ["return", "give"], exp: "The `yield` keyword yields values in a generator." },
+        { q: "What is the type of `True`?", c: "boolean", w: ["string", "integer"], exp: "`True` is a boolean type, representing true." },
+        { q: "What is `'code'` classified as?", c: "string", w: ["command", "function"], exp: "`'code'` is classified as a string data type." },
+        { q: "What does `'big' + 'gest'` produce?", c: "biggest", w: ["big gest", "b"], exp: "`'big' + 'gest'` concatenates to 'biggest'." },
+        { q: "Which module interacts with files?", c: "os", w: ["file", "io"], exp: "The `os` module interacts with the operating system and files." },
+        { q: "What does `'jump' + 'ing'` produce?", c: "jumping", w: ["jump ing", "j"], exp: "`'jump' + 'ing'` concatenates to 'jumping'." },
+        { q: "What is the global scope?", c: "module level", w: ["function", "class"], exp: "The global scope is the module level in Python." },
+        { q: "What does `'run' + 's'` produce?", c: "runs", w: ["run s", "r"], exp: "`'run' + 's'` concatenates to 'runs'." },
+        { q: "Which keyword defines a class?", c: "class", w: ["type", "struct"], exp: "The `class` keyword defines a class for objects." },
+        { q: "What does `'fast' + 'est'` produce?", c: "fastest", w: ["fast est", "f"], exp: "`'fast' + 'est'` concatenates to 'fastest'." },
+        { q: "What error occurs from bad code?", c: "SyntaxError", w: ["CodeError", "Bug"], exp: "A `SyntaxError` occurs from incorrect Python syntax." },
+        { q: "What does `'play' + 'er'` produce?", c: "player", w: ["play er", "p"], exp: "`'play' + 'er'` concatenates to 'player'." },
+        { q: "What symbol denotes a decorator?", c: "@", w: ["#", "$"], exp: "The `@` symbol denotes a decorator in Python." },
+        { q: "What does `'nice' + 'ly'` produce?", c: "nicely", w: ["nice ly", "n"], exp: "`'nice' + 'ly'` concatenates to 'nicely'." },
+        { q: "What is a `set` in Python?", c: "unique collection", w: ["list", "string"], exp: "A `set` is a collection of unique items." },
+        { q: "What does `'work' + 'ing'` produce?", c: "working", w: ["work ing", "w"], exp: "`'work' + 'ing'` concatenates to 'working'." },
+        { q: "Which module manages dates?", c: "datetime", w: ["time", "date"], exp: "The `datetime` module manages dates and times." },
+        { q: "What does `'talk' + 'ing'` produce?", c: "talking", w: ["talk ing", "t"], exp: "`'talk' + 'ing'` concatenates to 'talking'." },
+        { q: "Which keyword ensures cleanup?", c: "finally", w: ["done", "end"], exp: "The `finally` keyword ensures cleanup after a `try` block." },
+        { q: "What does `'dance' + 'ing'` produce?", c: "dancing", w: ["dance ing", "d"], exp: "`'dance' + 'ing'` concatenates to 'dancing'." },
+        { q: "What initializes a class?", c: "__init__", w: ["start", "init"], exp: "`__init__` is a special method to initialize a class." },
+        { q: "What does `'laugh' + 'ing'` produce?", c: "laughing", w: ["laugh ing", "l"], exp: "`'laugh' + 'ing'` concatenates to 'laughing'." },
+        { q: "Which keyword accesses globals?", c: "global", w: ["all", "scope"], exp: "The `global` keyword accesses variables in the global scope." },
+        { q: "What does `'read' + 'ing'` produce?", c: "reading", w: ["read ing", "r"], exp: "`'read' + 'ing'` concatenates to 'reading'." },
+        { q: "What is a `tuple` in Python?", c: "immutable sequence", w: ["list", "string"], exp: "A `tuple` is an immutable sequence of items." },
+        { q: "What does `'swim' + 'ming'` produce?", c: "swimming", w: ["swim ming", "s"], exp: "`'swim' + 'ming'` concatenates to 'swimming'." },
+        { q: "Which operator checks membership?", c: "in", w: ["is", "has"], exp: "The `in` operator checks membership in a collection." },
+        { q: "What does `'fly' + 'ing'` produce?", c: "flying", w: ["fly ing", "f"], exp: "`'fly' + 'ing'` concatenates to 'flying'." },
+        { q: "What Easter egg module exists?", c: "antigravity", w: ["gravity", "fun"], exp: "`antigravity` is a humorous Easter egg module." },
+        { q: "What does `'jump' + 'ed'` produce?", c: "jumped", w: ["jump ed", "j"], exp: "`'jump' + 'ed'` concatenates to 'jumped'." },
+        { q: "Which keyword tests a condition?", c: "assert", w: ["check", "test"], exp: "The `assert` keyword tests a condition and raises an error if false." },
+        { q: "What does `'cook' + 'ing'` produce?", c: "cooking", w: ["cook ing", "c"], exp: "`'cook' + 'ing'` concatenates to 'cooking'." },
+        { q: "What is a nested function?", c: "function inside", w: ["loop", "class"], exp: "A nested function is a function defined inside another function." },
+        { q: "What does `'run' + 'ner'` produce?", c: "runner", w: ["run ner", "r"], exp: "`'run' + 'ner'` concatenates to 'runner'." },
+        { q: "Which keyword handles exceptions?", c: "except", w: ["fix", "catch"], exp: "The `except` keyword handles exceptions in Python." }
+      ]
+    };
+
+    const elements = {
+      questionDisplay: document.getElementById("question"),
+      scoreDisplay: document.getElementById("scoreDisplay"),
+      scoreListEl: document.getElementById("score-list"),
+      popupOverlay: document.getElementById("popupOverlay"),
+      popupTitle: document.getElementById("popupTitle"),
+      popupMessage: document.getElementById("popupMessage"),
+      playerNameInput: document.getElementById("playerNameInput"),
+      submitBtn: document.getElementById("submitBtn"),
+      restartBtn: document.getElementById("restartBtn"),
+      startRestartBtn: document.getElementById("startRestartBtn"),
+      shareBtn: document.getElementById("shareBtn"),
+      toggleSoundBtn: document.getElementById("toggleSoundBtn"),
+      popupContent: document.querySelector(".popup-content")
+    };
+
+    const audio = {
+      bgMusicSlow: document.getElementById("bgMusicSlow"),
+      bgMusicFast: document.getElementById("bgMusicFast"),
+      eatSound: document.getElementById("eatSound"),
+      gameOverSound: document.getElementById("gameOverSound"),
+      milestoneSound: document.getElementById("milestoneSound"),
+      winSound: document.getElementById("winSound"),
+      wrongSound: document.getElementById("wrongSound"),
+      awwwSound: document.getElementById("awwwSound"),
+      invincibilitySound: document.getElementById("invincibilitySound"),
+      nomNomSound: document.getElementById("nomNomSound")
+    };
+    Object.values(audio).forEach(a => a.volume = 0.5);
+
+    const eyeRadius = 0.08 * cellSize;
+    const pupilRadius = eyeRadius / 2;
+
+    function resizeCanvas() {
+  const maxSize = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.7);
+  canvas.width = maxSize;
+  canvas.height = maxSize;
+  cellSize = canvas.width / cols;
+  console.log("Canvas size:", canvas.width, canvas.height, "Cell size:", cellSize); // Debug log
+  redrawScene();
+}
+
+    function setDifficulty(difficulty) {
+      currentDifficulty = difficulty;
+      gameSpeed = CONFIG.DIFFICULTIES[difficulty].INITIAL_SPEED;
+      requiredCorrect = CONFIG.DIFFICULTIES[difficulty].REQUIRED_CORRECT;
+      pointsPerCorrect = CONFIG.DIFFICULTIES[difficulty].POINTS_PER_CORRECT;
+      document.querySelectorAll('.difficulty-buttons button').forEach(btn => btn.classList.remove('selected'));
+      document.querySelector(`.difficulty-buttons button[onclick="setDifficulty('${difficulty}')"]`).classList.add('selected');
+      if (gameStarted) restartGame();
+    }
+
+    function setSnakeColor(color, button) {
+      snakeColor = color;
+      document.querySelectorAll('.color-buttons button').forEach(btn => btn.classList.remove('selected'));
+      button.classList.add('selected');
+      redrawScene();
+    }
+
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      elements.toggleSoundBtn.innerText = isSoundOn ? "🔊" : "🔇";
+      Object.values(audio).forEach(a => a.muted = !isSoundOn);
+      if (!isSoundOn) {
+        audio.bgMusicSlow.pause();
+        audio.bgMusicFast.pause();
+      } else if (gameStarted && !gameOver) {
+        audio.bgMusicSlow.play().catch(err => console.warn("Music blocked:", err));
+      }
+    }
+  let isLearnMode = false; // Default to off
+
+function toggleLearnMode() {
+  isLearnMode = !isLearnMode;
+  const btn = document.getElementById("toggleLearnModeBtn");
+  btn.innerText = `Learn Mode: ${isLearnMode ? "On" : "Off"}`;
+  btn.classList.toggle("active", isLearnMode);
+  // Redraw the scene to reflect the new color scheme
+  drawScene();
+}
+    function handleStartRestart() {
+      if (!gameStarted) {
+        gameStarted = true;
+        elements.startRestartBtn.innerText = "Restart";
+        startGame();
+      } else {
+        restartGame();
+      }
+    }
+
+    function startGame() {
+  hidePopup();
+  if (isSoundOn) {
+    audio.bgMusicSlow.pause();
+    audio.bgMusicFast.pause();
+    audio.bgMusicSlow.currentTime = audio.bgMusicFast.currentTime = 0;
+    audio.bgMusicSlow.play().catch(err => console.warn("Music blocked:", err));
+  }
+  document.getElementById("resetButton").style.display = "none"; // Hide Reset button
+  initGame();
+  drawScene();
+  gameStartTime = performance.now();
+  startTimeSpeedup();
+  requestAnimationFrame(gameLoop);
+}
+
+    function showInstructionsPopup() {
+      elements.popupTitle.innerText = "How to Play";
+      elements.popupMessage.innerText = "Eat the correct answer (green flash) to grow and score!\nAvoid wrong answers (red flash).\nUse arrows or mobile buttons to move.\nReach the required correct answers to win!";
+      elements.playerNameInput.classList.add("hidden");
+      elements.submitBtn.classList.add("hidden");
+      elements.restartBtn.classList.add("hidden");
+      elements.shareBtn.classList.add("hidden");
+      elements.popupOverlay.style.display = "flex";
+    }
+
+    function initGame() {
+      gameOver = false;
+      hasSubmittedScore = false;
+      shuffleQuestions();
+      currentQuestionIndex = -1;
+
+      snake = [];
+      const midX = Math.floor(cols / 2);
+      const midY = Math.floor(rows / 2);
+      for (let i = 0; i < 2; i++) snake.push({ x: midX - i, y: midY });
+      direction = { x: 1, y: 0 };
+
+      score = 0;
+      correctAnswers = 0;
+      foodItems = [];
+      powerUps = [];
+      immunityEndTime = 0;
+      shinyEndTime = 0;
+
+      updateScoreDisplay();
+      pickNewQuestion();
+      spawnPowerUps();
+
+      lastUpdateTime = performance.now();
+    }
+
+    function shuffleQuestions() {
+      const questions = questionCategories[currentDifficulty];
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+    }
+
+    function pickNewQuestion() {
+      const questions = questionCategories[currentDifficulty];
+      if (questions.length === 0) {
+        endGame();
+        return;
+      }
+      currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+      currentQuestion = questions[currentQuestionIndex];
+      elements.questionDisplay.innerText = currentQuestion.q;
+      startQuestionTimer();
+      spawnFoodItems();
+      spawnPowerUps();
+    }
+
+    function startQuestionTimer() {
+      clearTimeout(questionTimer);
+      questionTimer = setTimeout(() => {
+        if (!gameOver) endGame();
+      }, CONFIG.QUESTION_TIME_LIMIT);
+    }
+
+    function spawnFoodItems() {
+      if (gameOver || !currentQuestion) return;
+      foodItems = [];
+      const answers = [currentQuestion.c, ...currentQuestion.w];
+      shuffleArray(answers);
+
+      answers.forEach(answer => {
+        const pos = getRandomEmptyCell();
+        if (!pos) return;
+        foodItems.push({ x: pos.x, y: pos.y, text: answer, correct: answer === currentQuestion.c });
+      });
+      drawScene();
+    }
+
+    function spawnPowerUps() {
+      powerUps = powerUps.filter(p => performance.now() < p.expiry);
+      if (Math.random() < CONFIG.POWER_UP_CHANCE) {
+        const pos = getRandomEmptyCell();
+        if (pos) powerUps.push({ x: pos.x, y: pos.y, type: "golden", expiry: performance.now() + 10000 });
+      }
+      if (Math.random() < CONFIG.IMMUNITY_CHANCE) {
+        const pos = getRandomEmptyCell();
+        if (pos) powerUps.push({ x: pos.x, y: pos.y, type: "immunity", expiry: performance.now() + 10000 });
+      }
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function getRandomEmptyCell() {
+      let pos;
+      let collision;
+      let attempts = 0;
+      const maxAttempts = 100;
+      do {
+        pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+        collision = snake.some(seg => seg.x === pos.x && seg.y === pos.y) ||
+                    foodItems.some(f => f.x === pos.x && f.y === pos.y) ||
+                    powerUps.some(p => p.x === pos.x && p.y === pos.y);
+        attempts++;
+        if (attempts > maxAttempts) return null;
+      } while (collision);
+      return pos;
+    }
+
+    function updateScoreDisplay() {
+      elements.scoreDisplay.innerText = `🏆 Score: ${score}`;
+      if (isNewHighScore()) elements.scoreDisplay.classList.add("glow");
+      else elements.scoreDisplay.classList.remove("glow");
+    }
+
+    function showScoreAnimation(text, x, y) {
+      const animation = document.createElement("div");
+      animation.className = "score-animation";
+      animation.innerText = text;
+      animation.style.left = `${x}px`;
+      animation.style.top = `${y}px`;
+      document.body.appendChild(animation);
+      setTimeout(() => animation.remove(), 1000);
+    }
+
+    function gameLoop(currentTime) {
+      if (gameOver) return;
+
+      if (currentTime - lastUpdateTime >= gameSpeed) {
+        if (direction.x === 0 && direction.y === 0) {
+          drawScene();
+        } else {
+          const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+          if (head.x < 0) head.x = cols - 1;
+          if (head.x >= cols) head.x = 0;
+          if (head.y < 0) head.y = rows - 1;
+          if (head.y >= rows) head.y = 0;
+
+          if (snake.slice(0, snake.length - 1).some(seg => seg.x === head.x && seg.y === head.y)) {
+            endGame("GAME OVER\nYou touched your tail! 🐍💥");
+            return;
+          }
+
+          snake.unshift(head);
+          let ateFood = false;
+
+          for (let i = 0; i < foodItems.length; i++) {
+            if (head.x === foodItems[i].x && head.y === foodItems[i].y) {
+              if (foodItems[i].correct) {
+                score += pointsPerCorrect;
+                correctAnswers++;
+                speedUpGame();
+
+                if (isSoundOn) {
+                  console.log("Playing nom nom sound");
+                  audio.eatSound.play().catch(err => console.error("Eat sound error:", err));
+                  audio.nomNomSound.play().catch(err => console.error("Nom nom sound error:", err));
+                }
+
+                flashScreen('rgba(0, 255, 0, 0.5)');
+                updateScoreDisplay();
+                checkMilestone();
+
+                if (correctAnswers >= requiredCorrect) {
+                  endGame("YOU WIN!");
+                  return;
+                }
+
+                immunityEndTime = 0;
+              } else if (immunityEndTime > currentTime) {
+                score += 5;
+
+                if (isSoundOn) {
+                  audio.wrongSound.play();
+                }
+
+                flashScreen('rgba(255, 255, 0, 0.5)');
+                updateScoreDisplay();
+
+                immunityEndTime = 0;
+              } else {
+                if (isSoundOn) audio.wrongSound.play();
+                const q = questionCategories[currentDifficulty][currentQuestionIndex];
+                endGame(`GAME OVER\nWrong answer!\nCorrect: ${q.c}\nExplanation: ${q.exp}`);
+                flashScreen('rgba(255, 0, 0, 0.5)');
+                return;
+              }
+
+              ateFood = true;
+              foodItems.splice(i, 1);
+              pickNewQuestion();
+              break;
+            }
+          }
+
+          for (let i = powerUps.length - 1; i >= 0; i--) {
+            if (head.x === powerUps[i].x && head.y === powerUps[i].y) {
+              if (powerUps[i].type === "golden") {
+                score += 20;
+                if (isSoundOn) audio.eatSound.play();
+                flashScreen('rgba(255, 215, 0, 0.5)');
+                showScoreAnimation("+20", head.x * cellSize + cellSize / 2, head.y * cellSize + cellSize / 2);
+                updateScoreDisplay();
+              } else if (powerUps[i].type === "immunity") {
+                immunityEndTime = currentTime + 999999;
+                if (isSoundOn) audio.invincibilitySound.play();
+                flashScreen('rgba(0, 0, 255, 0.5)');
+              }
+              powerUps.splice(i, 1);
+            }
+          }
+
+          if (!ateFood) snake.pop();
+        }
+
+        slitherOffset += 0.1;
+        drawScene();
+        lastUpdateTime = currentTime;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function speedUpGame() {
+      gameSpeed = Math.max(minSpeed, gameSpeed - CONFIG.SPEED_INCREMENT * (0.005 - correctAnswers / (15 * requiredCorrect)));
+      updateMusicSpeed();
+    }
+
+    function startTimeSpeedup() {
+      clearInterval(timeSpeedTimer);
+      timeSpeedTimer = setInterval(() => {
+        if (!gameOver && gameSpeed > minSpeed) {
+          gameSpeed = Math.max(minSpeed, gameSpeed - CONFIG.TIME_SPEED_INCREMENT);
+          updateMusicSpeed();
+        }
+      }, CONFIG.TIME_SPEED_INTERVAL);
+    }
+
+    function updateMusicSpeed() {
+      if (gameSpeed <= 300) {
+        if (isSoundOn) {
+          audio.bgMusicSlow.pause();
+          audio.bgMusicFast.play();
+        }
+      } else {
+        if (isSoundOn) {
+          audio.bgMusicFast.pause();
+          audio.bgMusicSlow.play();
+        }
+      }
+    }
+
+    function checkMilestone() {
+      if ([5, 10, 15].includes(correctAnswers)) {
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+        if (isSoundOn) audio.milestoneSound.play();
+      }
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawCheckeredBackground();
+      drawSnake();
+      drawFood();
+      drawPowerUps();
+    }
+
+    function drawCheckeredBackground() {
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++)
+          ctx.fillStyle = ((r + c) % 2 === 0) ? "#aad751" : "#a2d149", ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+    }
+
+    function drawSnake() {
+      if (snake.length < 2) return;
+      ctx.save();
+      const baseColor = snakeColor === "blue" ? "#4285f4" : (snakeColor === "pink" ? "#ff69b4" : "#FF4500");
+      const gradient = ctx.createLinearGradient(snake[0].x * cellSize, snake[0].y * cellSize, snake[snake.length - 1].x * cellSize, snake[snake.length - 1].y * cellSize);
+      gradient.addColorStop(0, baseColor);
+      gradient.addColorStop(1, adjustColor(baseColor, -50));
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = cellSize * 0.4 * (1 + 0.1 * Math.sin(slitherOffset));
+      ctx.lineCap = "round";
+
+      if (shinyEndTime > performance.now()) {
+        ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+        ctx.shadowBlur = 10;
+      }
+
+      ctx.beginPath();
+      const headX = snake[0].x * cellSize + cellSize / 2;
+      const headY = snake[0].y * cellSize + cellSize / 2;
+      ctx.moveTo(headX, headY);
+      for (let i = 1; i < snake.length; i++) {
+        const prevX = snake[i - 1].x * cellSize + cellSize / 2;
+        const prevY = snake[i - 1].y * cellSize + cellSize / 2;
+        const currX = snake[i].x * cellSize + cellSize / 2;
+        const currY = snake[i].y * cellSize + cellSize / 2;
+        if (Math.abs(currX - prevX) > cellSize * 1.5 || Math.abs(currY - prevY) > cellSize * 1.5)
+          ctx.moveTo(currX, currY);
+        else {
+          const midX = (prevX + currX) / 2;
+          const midY = (prevY + currY) / 2;
+          ctx.quadraticCurveTo(prevX, prevY, midX, midY);
+        }
+      }
+      ctx.stroke();
+      drawHeadFeatures();
+      ctx.restore();
+    }
+
+    function adjustColor(color, amount) {
+      let r = parseInt(color.slice(1, 3), 16) + amount;
+      let g = parseInt(color.slice(3, 5), 16) + amount;
+      let b = parseInt(color.slice(5, 7), 16) + amount;
+      r = Math.max(0, Math.min(255, r));
+      g = Math.max(0, Math.min(255, g));
+      b = Math.max(0, Math.min(255, b));
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+
+    function drawHeadFeatures() {
+      const head = snake[0];
+      const centerX = head.x * cellSize + cellSize / 2;
+      const centerY = head.y * cellSize + cellSize / 2;
+      let angle = 0;
+      if (direction.x === 1) angle = 0;
+      if (direction.x === -1) angle = Math.PI;
+      if (direction.y === 1) angle = Math.PI / 2;
+      if (direction.y === -1) angle = -Math.PI / 2;
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle);
+
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(-cellSize * 0.12, -cellSize * 0.1, eyeRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cellSize * 0.12, -cellSize * 0.1, eyeRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(-cellSize * 0.12, -cellSize * 0.1, pupilRadius, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cellSize * 0.12, -cellSize * 0.1, pupilRadius, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.strokeStyle = "#ff4040";
+      ctx.lineWidth = cellSize * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(cellSize * 0.25, 0);
+      ctx.lineTo(cellSize * 0.35 + Math.sin(slitherOffset) * 5, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cellSize * 0.35 + Math.sin(slitherOffset) * 5, 0);
+      ctx.lineTo(cellSize * 0.40 + Math.sin(slitherOffset) * 5, -cellSize * 0.05);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cellSize * 0.35 + Math.sin(slitherOffset) * 5, 0);
+      ctx.lineTo(cellSize * 0.40 + Math.sin(slitherOffset) * 5, cellSize * 0.05);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+   function drawFood() {
+  foodItems.forEach(food => {
+    const centerX = food.x * cellSize + cellSize / 2;
+    const centerY = food.y * cellSize + cellSize / 2;
+
+    // Set initial font for measurement
+    ctx.font = "bold 14px Roboto";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Measure text width
+    const textWidth = ctx.measureText(food.text).width;
+    const padding = 8; // Padding around the text
+    let blockSize = Math.max(cellSize * 0.8, textWidth + padding); // Minimum size, grows with text
+    blockSize = Math.min(blockSize, cellSize * 1.5); // Cap at 1.5 cells to avoid overlap
+
+    const offset = (cellSize - blockSize) / 2;
+    const foodX = food.x * cellSize + offset;
+    const foodY = food.y * cellSize + offset;
+
+    // Set color based on Learn Mode
+    ctx.fillStyle = isLearnMode ? (food.correct ? "#00FF00" : "#FF0000") : "#FF0000"; // Green for correct in Learn Mode, red otherwise
+    ctx.fillRect(foodX, foodY, blockSize, blockSize);
+
+    // Draw the text
+    ctx.fillStyle = "#FFF";
+    wrapText(food.text, centerX, centerY, blockSize - padding);
+  });
+}
+
+    function drawPowerUps() {
+      powerUps.forEach(power => {
+        const centerX = power.x * cellSize + cellSize / 2;
+        const centerY = power.y * cellSize + cellSize / 2;
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 20px Roboto";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(power.type === "golden" ? "🍎" : "🛡️", centerX, centerY);
+      });
+    }
+
+    function wrapText(text, centerX, centerY, maxWidth) {
+      let words = text.split(" "), line = "", lineHeight = 16;
+      if (words.length === 1 && words[0].length > 7) {
+        const half = Math.ceil(words[0].length / 2);
+        words = [words[0].slice(0, half), words[0].slice(half)];
+      }
+      if (ctx.measureText(text).width <= maxWidth) ctx.fillText(text, centerX, centerY);
+      else {
+        let lines = [];
+        for (let i = 0; i < words.length; i++) {
+          let testLine = line + words[i] + " ";
+          if (ctx.measureText(testLine).width > maxWidth) { lines.push(line.trim()); line = words[i] + " "; }
+          else line = testLine;
+        }
+        lines.push(line.trim());
+        if (lines.length > 2) { ctx.font = "bold 12px Roboto"; lineHeight = 14; }
+        const totalHeight = lines.length * lineHeight;
+        const startY = centerY - totalHeight / 2 + lineHeight / 2;
+        lines.forEach((l, idx) => ctx.fillText(l, centerX, startY + idx * lineHeight));
+      }
+    }
+
+  function endGame(message = "GAME OVER") {
+  if (gameOver) return;
+  gameOver = true;
+  if (isSoundOn) {
+    audio.bgMusicSlow.pause();
+    audio.bgMusicFast.pause;
+    if (message === "YOU WIN!") audio.winSound.play();
+    else {
+      audio.gameOverSound.play();
+      audio.awwwSound.play();
+    }
+  }
+  clearTimeout(questionTimer);
+  clearInterval(timeSpeedTimer);
+  const timePlayed = (performance.now() - gameStartTime) / 1000;
+  const fullMessage = `${message}\nScore: ${score}\nTime Played: ${timePlayed.toFixed(1)}s\nCorrect: ${correctAnswers}`;
+  document.getElementById("resetButton").style.display = "block"; // Show Reset button
+  if (correctAnswers >= requiredCorrect) {
+    confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+    setTimeout(() => confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } }), 500);
+    showPopup(fullMessage, true);
+  } else {
+    showPopup(fullMessage);
+  }
+  elements.shareBtn.classList.remove("hidden");
+}
+
+    function submitScore() {
+      if (hasSubmittedScore) return;
+
+      try {
+        hasSubmittedScore = true;
+        const playerName = elements.playerNameInput.value.trim() || "Anonymous";
+
+        let scoreboard = JSON.parse(localStorage.getItem("snakeQuizScoreboard") || "[]");
+        scoreboard.push({ name: playerName, score, time: Date.now() });
+
+        scoreboard.sort((a, b) => b.score - a.score);
+        if (scoreboard.length > 10) scoreboard = scoreboard.slice(0, 10);
+
+        localStorage.setItem("snakeQuizScoreboard", JSON.stringify(scoreboard));
+        displayScoreboard();
+
+        elements.playerNameInput.style.display = "none";
+        elements.submitBtn.style.display = "none";
+
+        elements.restartBtn.classList.remove("hidden");
+        elements.shareBtn.classList.remove("hidden");
+
+        showPopup(elements.popupTitle.innerText + "\n" + elements.popupMessage.innerText, correctAnswers >= requiredCorrect);
+      } catch (e) {
+        console.error("Scoreboard error:", e);
+        alert("Failed to save score!");
+      }
+    }
+
+    function restartGame() {
+      hidePopup();
+      elements.playerNameInput.value = "";
+      hasSubmittedScore = false;
+      elements.playerNameInput.classList.remove("hidden");
+      elements.submitBtn.classList.remove("hidden");
+      elements.shareBtn.classList.add("hidden");
+      gameSpeed = CONFIG.DIFFICULTIES[currentDifficulty].INITIAL_SPEED;
+      initGame();
+      drawScene();
+      gameStartTime = performance.now();
+      startTimeSpeedup();
+      if (isSoundOn) {
+        audio.bgMusicSlow.currentTime = 0;
+        audio.bgMusicSlow.play().catch(err => console.warn("Music blocked:", err));
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    function displayScoreboard() {
+      let scoreboard = JSON.parse(localStorage.getItem("snakeQuizScoreboard") || "[]");
+      elements.scoreListEl.innerHTML = "";
+      scoreboard.forEach((entry, idx) => {
+        const li = document.createElement("li");
+        li.innerText = `${idx + 1}. ${entry.name} - ${entry.score}`;
+        elements.scoreListEl.appendChild(li);
+      });
+    }
+
+    function showPopup(message, isWin = false) {
+      elements.popupTitle.innerText = message.split('\n')[0];
+      elements.popupMessage.innerText = message.split('\n').slice(1).join('\n');
+      if (isWin) elements.popupContent.classList.add("win-animation");
+      else elements.popupContent.classList.remove("win-animation");
+      if (hasSubmittedScore) {
+        elements.playerNameInput.classList.add("hidden");
+        elements.submitBtn.classList.add("hidden");
+        elements.restartBtn.classList.remove("hidden");
+        elements.shareBtn.classList.remove("hidden");
+      } else {
+        elements.playerNameInput.classList.remove("hidden");
+        elements.submitBtn.classList.remove("hidden");
+        elements.restartBtn.classList.remove("hidden");
+        elements.shareBtn.classList.add("hidden");
+      }
+      elements.popupOverlay.style.display = "flex";
+    }
+
+    function hidePopup() {
+      elements.popupOverlay.style.display = "none";
+      elements.popupContent.classList.remove("win-animation");
+    }
+
+    function flashScreen(color) {
+      canvas.style.background = color;
+      setTimeout(() => { canvas.style.background = '#fff'; redrawScene(); }, 200);
+    }
+
+    function isNewHighScore() {
+      const scoreboard = JSON.parse(localStorage.getItem("snakeQuizScoreboard") || "[]");
+      return scoreboard.length === 0 || score > scoreboard[0].score;
+    }
+
+    function shareScore() {
+      const timePlayed = (performance.now() - gameStartTime) / 1000;
+      const cuteMessage = `🔥 I just scored **${score} points** in Python Snake! 🐍💥\n
+Can you beat my score?
+- Score: ${score} 🏆
+- Time: ${timePlayed.toFixed(1)}s ⏳
+- Correct Answers: ${correctAnswers} ✅\n
+Play here: https://metagalacticscripts.github.io/Python-Snake/`;
+      if (navigator.share) navigator.share({ text: cuteMessage })
+        .catch(err => console.error("Share failed:", err));
+      else prompt("Copy this to share:", cuteMessage);
+    }
+
+    function redrawScene() { drawScene(); }
+
+    document.addEventListener("keydown", e => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault();
+      if (gameOver) return;
+      switch (e.key) {
+        case "ArrowUp": if (direction.y === 1) break; direction = { x: 0, y: -1 }; break;
+        case "ArrowDown": if (direction.y === -1) break; direction = { x: 0, y: 1 }; break;
+        case "ArrowLeft": if (direction.x === 1) break; direction = { x: -1, y: 0 }; break;
+        case "ArrowRight": if (direction.x === -1) break; direction = { x: 1, y: 0 }; break;
+        case "p": togglePause(); break;
+      }
+    });
+
+    function mobileControl(dir) {
+      if (gameOver || Date.now() - lastMove < CONFIG.MOVE_DELAY) return;
+      lastMove = Date.now();
+      switch (dir) {
+        case "up": if (direction.y === 1) break; direction = { x: 0, y: -1 }; break;
+        case "down": if (direction.y === -1) break; direction = { x: 0, y: 1 }; break;
+        case "left": if (direction.x === 1) break; direction = { x: -1, y: 0 }; break;
+        case "right": if (direction.x === -1) break; direction = { x: 1, y: 0 }; break;
+      }
+    }
+
+    function togglePause() {
+      if (gameOver) return;
+      if (gameStarted) {
+        if (timeSpeedTimer) {
+          clearInterval(timeSpeedTimer);
+          timeSpeedTimer = null;
+          showPopup("Paused");
+        } else {
+          startTimeSpeedup();
+          hidePopup();
+        }
+      }
+    }
+
+    const controls = document.querySelector('.mobile-controls');
+    const dragHandle = document.querySelector('.drag-handle');
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    dragHandle.addEventListener('mousedown', startDragging);
+    dragHandle.addEventListener('touchstart', startDragging, { passive: false });
+
+    function startDragging(e) {
+      isDragging = true;
+      dragHandle.style.cursor = 'grabbing';
+
+      const event = e.type.includes('touch') ? e.touches[0] : e;
+      startX = event.clientX;
+      startY = event.clientY;
+      initialLeft = controls.offsetLeft;
+      initialTop = controls.offsetTop;
+
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('touchmove', drag, { passive: false });
+      document.addEventListener('mouseup', stopDragging);
+      document.addEventListener('touchend', stopDragging);
+
+      e.preventDefault();
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      const event = e.type.includes('touch') ? e.touches[0] : e;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+
+      controls.style.left = `${initialLeft + dx}px`;
+      controls.style.top = `${initialTop + dy}px`;
+      controls.style.bottom = 'auto';
+      controls.style.transform = 'none';
+
+      e.preventDefault();
+    }
+
+    function stopDragging() {
+      isDragging = false;
+      dragHandle.style.cursor = 'grab';
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('touchmove', drag);
+      document.removeEventListener('mouseup', stopDragging);
+      document.removeEventListener('touchend', stopDragging);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    displayScoreboard();
+    elements.toggleSoundBtn.addEventListener("click", toggleSound);
+    document.querySelector('.blue-btn').classList.add('selected');
+  </script>
+</body>
+</html>
